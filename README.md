@@ -1,5 +1,7 @@
 # Topset, a workout logging app
 
+Live Demo: https://topset.erichuangreal.dev/
+
 I created a workout logging app that breaks off from the standard number-crunching app. Instead, I focused on creating a more encouraging and humanizing approach to lifting by focusing on an avatar that grows with the user's progress. It has different mood settings that is determined by how often and how much the user is training. I aimed to make this app a low-stakes environment where the user isn't swamped by numbers on the UI, but is met with a friendly avatar coach that analyzes user progression, plateaus, prs, and deload trends and provides dynamic and constructive criticism.
 
 Much of the algorithm is hidden behind the UI, leaving only the highlights, coaching tips, and avatar emotions for the user to see.
