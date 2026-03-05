@@ -297,9 +297,9 @@ export default function LogWout() {
 
         // rep range guidance
         if (avgReps >= 10) return `High-rep day. Slow the eccentric down. ${cueFor(mainEx)}`;
-        if (avgReps >= 7)  return `Moderate reps. Control each one. ${cueFor(mainEx)}`;
-        if (avgReps <= 4)  return `Heavy territory. Full rest between every set. Stay tight.`;
-        if (avgReps <= 6)  return `Low-rep day. Treat each rep like it matters. ${cueFor(mainEx)}`;
+        if (avgReps >= 7) return `Moderate reps. Control each one. ${cueFor(mainEx)}`;
+        if (avgReps <= 4) return `Heavy territory. Full rest between every set. Stay tight.`;
+        if (avgReps <= 6) return `Low-rep day. Treat each rep like it matters. ${cueFor(mainEx)}`;
 
         // session length + weekly fatigue
         if (totalSets <= 3) return "Short session still counts. Wrap it up clean.";
@@ -410,7 +410,7 @@ export default function LogWout() {
                 />
 
                 {/* Avatar name pill */}
-                <div className="mt-3">
+                <div className="mt-5">
                     <div className="inline-flex items-center gap-3 rounded-full bg-[#6366F1] px-5 py-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-black/25">
                             <UserIcon className="h-4 w-4 text-white" />
@@ -419,15 +419,15 @@ export default function LogWout() {
                     </div>
 
                     {/* two lines under avatar */}
-                    <div className="mt-2 space-y-1 pl-3">
-                        <div className="text-[12px] text-[#9CA3AF]">{highlightOfDay}</div>
-                        <div className="text-[12px] text-[#9CA3AF]">{coachLine}</div>
+                    <div className="mt-2.5 space-y-1.5 pl-1">
+                        <div className="text-[12px] leading-snug text-[#9CA3AF]">{highlightOfDay}</div>
+                        <div className="text-[12px] leading-snug text-[#9CA3AF]">{coachLine}</div>
                     </div>
                 </div>
             </div>
 
             {/* Light-blue section band: Current Exercise + Add exercise */}
-            <div className="mt-3 bg-[#E0E7FF]">
+            <div className="mt-5 bg-[#E0E7FF]">
                 <div className="px-5 py-4">
                     <div className="flex items-center justify-between">
                         <div className="inline-flex rounded-full bg-[#6366F1] px-5 py-2 text-[13px] font-medium text-white">
@@ -446,7 +446,7 @@ export default function LogWout() {
             </div>
 
             {/* Main input area */}
-            <div className="px-5 pt-2">
+            <div className="px-5 pt-5">
                 {/* Choose exercise */}
                 <div className="text-center">
                     <div className="text-[13px] font-medium text-[#6366F1] underline">Choose exercise</div>
@@ -470,7 +470,7 @@ export default function LogWout() {
                 </div>
 
                 {/* Column headers */}
-                <div className="mt-7 grid grid-cols-[44px_1fr_1fr_44px] items-center gap-3 text-center text-[13px] font-medium text-[#6366F1]">
+                <div className="mt-6 grid grid-cols-[44px_1fr_1fr_44px] items-center gap-3 text-center text-[13px] font-medium text-[#6366F1]">
                     <div>Sets</div>
                     <div>Weight</div>
                     <div>Reps</div>
@@ -517,7 +517,7 @@ export default function LogWout() {
                 </div>
 
                 {/* Add set */}
-                <div className="mt-7 flex items-center justify-center">
+                <div className="mt-5 flex items-center justify-center">
                     <button type="button" onClick={addSet} className="text-[13px] font-medium text-[#6366F1]">
                         + Add set
                     </button>
@@ -530,7 +530,7 @@ export default function LogWout() {
             </div>
 
             {/* Light-blue band: Exercise Log */}
-            <div className="mt-10 bg-[#E0E7FF]">
+            <div className="mt-8 bg-[#E0E7FF]">
                 <div className="px-5 py-4">
                     <div className="inline-flex rounded-full bg-[#6366F1] px-6 py-2 text-[13px] font-medium text-white">
                         Exercise Log
@@ -584,7 +584,7 @@ export default function LogWout() {
             </div>
 
             {/* Bottom Save Workout button */}
-            <div className="mt-10 px-5">
+            <div className="mt-8 px-5">
                 <div className="flex justify-center">
                     <button
                         onClick={saveWorkout}

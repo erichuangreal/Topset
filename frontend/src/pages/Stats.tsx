@@ -504,7 +504,7 @@ export default function StatsPage() {
                         </div>
 
                         {/* Trends */}
-                        <div className="mt-10">
+                        <div className="mt-8">
                             <SectionPill title="Trends" />
                         </div>
 
@@ -538,7 +538,7 @@ export default function StatsPage() {
                         </div>
 
                         {/* Highlights */}
-                        <div className="mt-10">
+                        <div className="mt-8">
                             <SectionPill title="Highlights" />
                         </div>
                         <Highlights rows={highlights} />

@@ -164,7 +164,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Privacy & Data */}
-                <div className="mt-10">
+                <div className="mt-8">
                     <SectionPill title="Privacy and Data" />
                 </div>
 

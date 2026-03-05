@@ -148,7 +148,7 @@ export default function Home() {
                   : "text-[var(--color-text-subtle)]";
 
     return (
-        <div className="px-5 pt-6 pb-8">
+        <div className="px-5 pt-6 pb-24">
             <TopPill
                 title="Home"
                 subtitle={new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
@@ -214,14 +214,14 @@ export default function Home() {
                 Today, I'm feeling {mood || "…"}.
             </p>
 
-            <div className="mt-5 rounded-xl bg-white px-4 py-3 shadow-sm">
+            <div className="mt-5 rounded-[18px] bg-white px-4 py-4 shadow-sm">
                 <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                     Today's focus
                 </h3>
-                <p className="mt-1 text-[14px] leading-snug text-[var(--color-text)]">{coachLine}</p>
+                <p className="mt-1.5 text-[14px] leading-snug text-[var(--color-text)]">{coachLine}</p>
             </div>
 
-            <div className="mt-4 rounded-xl bg-white px-4 py-3 shadow-sm">
+            <div className="mt-3 rounded-[18px] bg-white px-4 py-4 shadow-sm">
                 <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                     Last workout
                 </h3>
@@ -294,7 +294,7 @@ export default function Home() {
                 </div>
             </div>
 
-            <div className="h-6" />
+            <div className="h-2" />
         </div>
     );
 }
