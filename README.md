@@ -99,7 +99,7 @@ Once both frontend and backend are running, the application can be accessed by o
 
 ## Application Overview
 
-Topset is designed to be a low-stakes, encouraging environment for lifting.  
+Buffy is designed to be a low-stakes, encouraging environment for lifting.  
 Rather than focusing on optimization or competition, the app emphasizes consistency, intent, and long-term habit formation.
 
 All coaching output is deterministic. Given the same workout data and history, the same feedback is always produced.
