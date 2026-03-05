@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { ApiWorkout } from "../components/insights";
 import { TopPill } from "../components/TopPill";
+import { useTimer } from "../contexts/TimerContext";
 
 type SetRow = { weight: string; reps: string };
 type LoggedExercise = { id: string; name: string; sets: SetRow[] };
@@ -79,6 +80,7 @@ function saveDraft(d: DraftState) {
 
 export default function LogWout() {
     const draft = loadDraft();
+    const { timerActive, restTimerSecs, startRestTimer } = useTimer();
 
     const [currentExercise, setCurrentExercise] = useState<string>(draft?.currentExercise ?? "");
     const [sets, setSets] = useState<SetRow[]>(draft?.sets ?? [{ weight: "", reps: "" }]);
@@ -527,6 +529,25 @@ export default function LogWout() {
                 <div className="mt-3 text-center text-[12px] text-[#9CA3AF] tabular-nums">
                     {currentVolume > 0 ? `Current volume: ${currentVolume}` : "\u00A0"}
                 </div>
+
+                {/* Rest timer start button */}
+                {!timerActive && (
+                    <div className="mt-4 flex justify-center">
+                        <button
+                            type="button"
+                            onClick={startRestTimer}
+                            className="inline-flex items-center gap-2 rounded-full border border-[#6366F1]/40 bg-[#EEF2FF] px-5 py-2 text-[13px] font-medium text-[#6366F1] active:bg-[#E0E7FF]"
+                        >
+                            <TimerIcon className="h-3.5 w-3.5" />
+                            Start rest timer
+                            {restTimerSecs > 0 && (
+                                <span className="ml-0.5 text-[11px] font-normal text-[#6366F1]/60">
+                                    · {fmtTimer(restTimerSecs)}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Light-blue band: Exercise Log */}
@@ -600,6 +621,13 @@ export default function LogWout() {
     );
 }
 
+function fmtTimer(secs: number): string {
+    const s = Math.max(0, secs);
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${m}:${rem.toString().padStart(2, "0")}`;
+}
+
 function uid() {
     if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
@@ -608,18 +636,22 @@ function uid() {
 function UserIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg viewBox="0 0 24 24" fill="none" {...props}>
-            <path
-                d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-            />
-            <path
-                d="M4.5 20c1.7-3.5 13.3-3.5 15 0"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-            />
+            <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M4.5 20c1.7-3.5 13.3-3.5 15 0"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
     );
 }
+
+function TimerIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" {...props}>
+            <circle cx="12" cy="13" r="7" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 10v3.5l2 2" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M10 3h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    );
+}
+
