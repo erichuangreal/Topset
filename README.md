@@ -1,4 +1,4 @@
-# Topset, a workout logging app
+# Buffy, a workout logging app
 <ins>Open demo on MOBILE for best viewing experience.</ins>
 
 Live Demo: https://topset.erichuangreal.dev/
