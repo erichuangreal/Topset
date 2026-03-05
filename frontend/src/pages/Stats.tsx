@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { ApiWorkout } from "../components/insights";
 import { useProfile } from "../hooks/useProfile";
+import { TopPill } from "../components/TopPill";
 
 type SetLike = { weight?: number | null; reps?: number | null };
 type ExerciseLike = { name: string; sets: SetLike[] };
@@ -167,16 +168,6 @@ function buildWeekly1RMSeries(workouts: WorkoutLike[], weeksBack: number, exerci
     }
 
     return pts;
-}
-
-function TopPill({ title }: { title: string }) {
-    return (
-        <div className="relative h-[56px] w-full rounded-[18px] bg-[#DFE8FF]">
-            <div className="flex h-full items-center justify-center">
-                <span className="text-[22px] font-medium text-[#111827]">{title}</span>
-            </div>
-        </div>
-    );
 }
 
 function SectionPill({ title }: { title: string }) {

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { TopPill } from "../components/TopPill";
 import FlameIcon from "../assets/Subtract.svg?react";
 import { useEffect, useState } from "react";
 import {
@@ -148,7 +149,10 @@ export default function Home() {
 
     return (
         <div className="px-5 pt-6 pb-8">
-            <TopPill title="Home" />
+            <TopPill
+                title="Home"
+                subtitle={new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+            />
 
             <p className="mt-5 pl-1 text-left text-[14px] leading-snug text-[#374151]">
                 {line}
@@ -295,27 +299,6 @@ export default function Home() {
     );
 }
 
-function TopPill({ title }: { title: string }) {
-    return (
-        <div className="relative h-[56px] w-full rounded-[var(--radius-card)] border border-[#d0d9f7] bg-gradient-to-r from-[var(--color-primary-light)] to-[#e8ecff] shadow-[0_2px_8px_rgba(99,102,241,0.08)]">
-            <button
-                type="button"
-                aria-label="Avatar"
-                className="absolute left-4 top-1/2 -translate-y-1/2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 rounded-full"
-            >
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--color-text)] shadow-[0_4px_10px_rgba(0,0,0,0.18)] active:scale-[0.98] ring-2 ring-white/50">
-                    {/* Replace with avatar image later */}
-                    {/* <img src="/assets/avatar.png" alt="avatar" className="h-full w-full object-cover" /> */}
-                    <UserIcon className="h-5 w-5 text-white opacity-90" />
-                </div>
-            </button>
-
-            <div className="flex h-full items-center justify-center">
-                <span className="text-[22px] font-semibold text-[var(--color-text)]">{title}</span>
-            </div>
-        </div>
-    );
-}
 
 function HighlightRow({ icon, text }: { icon: React.ReactNode; text: string }) {
     return (

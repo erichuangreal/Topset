@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { ApiWorkout } from "../components/insights";
+import { TopPill } from "../components/TopPill";
 
 type SetRow = { weight: string; reps: string };
 type LoggedExercise = { id: string; name: string; sets: SetRow[] };
@@ -18,6 +19,31 @@ const EXERCISE_LIBRARY = [
 ];
 
 const STORAGE_KEY = "lifting:logwout:draft:v1";
+
+function classify(name: string): "push" | "pull" | "legs" | "hinge" | "general" {
+    const n = name.toLowerCase();
+    if (n.includes("bench") || n.includes("press")) return "push";
+    if (n.includes("row") || n.includes("pulldown")) return "pull";
+    if (n.includes("squat") || n.includes("leg press") || n.includes("calf")) return "legs";
+    if (n.includes("deadlift") || n.includes("romanian")) return "hinge";
+    return "general";
+}
+
+function cueFor(exName: string): string {
+    const c = classify(exName);
+    if (c === "push") return "Shoulders back. Controlled touch. Drive straight up.";
+    if (c === "pull") return "Elbows down and back. Hold the squeeze. No swinging.";
+    if (c === "legs") return "Brace hard. Knees track toes. Controlled depth.";
+    if (c === "hinge") return "Brace first. Lats tight. Pull from the hips, not your back.";
+    return "Smooth reps. Full range. No ego.";
+}
+
+function isoMonday(today: string): string {
+    const d = new Date(today + "T00:00:00");
+    const day = d.getDay();
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return d.toISOString().slice(0, 10);
+}
 
 type DraftState = {
     currentExercise: string;
@@ -60,22 +86,22 @@ export default function LogWout() {
 
     const [history14, setHistory14] = useState<ApiWorkout[]>([]);
 
-useEffect(() => {
-  (async () => {
-    const end = todayKey();
-    const start = (() => {
-      const d = new Date(end + "T00:00:00");
-      d.setDate(d.getDate() - 13); // 14 days including today
-      return d.toISOString().slice(0, 10);
-    })();
+    useEffect(() => {
+        (async () => {
+            const end = todayKey();
+            const start = (() => {
+                const d = new Date(end + "T00:00:00");
+                d.setDate(d.getDate() - 13); // 14 days including today
+                return d.toISOString().slice(0, 10);
+            })();
 
-    const res = await fetch(`/api/workouts/range?start=${start}&end=${end}`);
-    const data = await res.json();
-    if (!res.ok || data?.ok === false) return;
+            const res = await fetch(`/api/workouts/range?start=${start}&end=${end}`);
+            const data = await res.json();
+            if (!res.ok || data?.ok === false) return;
 
-    setHistory14((data.workouts ?? []) as ApiWorkout[]);
-  })();
-}, []);
+            setHistory14((data.workouts ?? []) as ApiWorkout[]);
+        })();
+    }, []);
 
 
     useEffect(() => {
@@ -107,88 +133,129 @@ useEffect(() => {
 
     const highlightOfDay = useMemo(() => {
         if (log.length === 0 && currentVolume === 0) return "";
-        if (log.length === 0 && currentVolume > 0) return "Highlight of the day: you started. Keep it clean.";
 
-        let top: { ex: string; weight: number } | null = null;
-
-        for (const ex of log) {
-            for (const s of ex.sets) {
-            const w = Number(s.weight);
-            const r = Number(s.reps);
-            if (Number.isFinite(w) && Number.isFinite(r) && w > 0 && r > 0) {
-                if (!top || w > top.weight) top = { ex: ex.name, weight: w };
-            }
-            }
+        if (log.length === 0) {
+            const ex = currentExercise.trim();
+            if (ex) return `Starting with ${ex}. Make the first set count.`;
+            return "You showed up. First set is always the hardest.";
         }
 
-        if (top) return `Highlight of the day: strong ${top.ex}.`;
-        return "Highlight of the day: solid work.";
-    }, [log, currentVolume]);
-
-    const coachLine = useMemo(() => {
-        const classify = (name: string) => {
-            const n = name.toLowerCase();
-            if (n.includes("bench") || n.includes("press")) return "push";
-            if (n.includes("row") || n.includes("pulldown")) return "pull";
-            if (n.includes("squat") || n.includes("leg press") || n.includes("calf")) return "legs";
-            if (n.includes("deadlift") || n.includes("romanian")) return "hinge";
-            return "general";
-        };
-
-        const cueFor = (exName: string) => {
-            const c = classify(exName);
-            if (c === "push") return "Shoulders back. Controlled touch. Drive straight up.";
-            if (c === "pull") return "Elbows down/back. Pause the squeeze. Don’t swing.";
-            if (c === "legs") return "Brace hard. Knees track. Controlled depth.";
-            if (c === "hinge") return "Brace first. Lats tight. No yanking.";
-            return "Smooth reps. Full range. No ego.";
-        };
-
-        const startedExercise = currentExercise.trim().length > 0;
-        const hasDraftInputs = sets.some((s) => s.weight.trim() !== "" || s.reps.trim() !== "");
-
-        // ---- early guidance (no randomness) ----
-        if (log.length === 0 && currentVolume === 0 && !startedExercise && !hasDraftInputs) {
-            return "Pick one lift. One clean set. Then decide if you want more.";
-        }
-
-        if (log.length === 0 && (startedExercise || hasDraftInputs || currentVolume > 0)) {
-            const hasWeight = sets.some((s) => s.weight.trim() !== "");
-            const hasReps = sets.some((s) => s.reps.trim() !== "");
-            if (hasWeight && !hasReps) return "Add reps, then add the exercise to the log.";
-            if (!hasWeight && hasReps) return "Add weight, then add the exercise to the log.";
-            return "Finish this exercise, then add it to the log.";
-        }
-
-        // ---- baseline from last 14 days (per exercise best weight) ----
+        // build baseline from history
         const baseline = new Map<string, number>();
         for (const w of history14) {
             if (w.restDay) continue;
             for (const ex of w.exercises) {
-            for (const s of ex.sets) {
-                const wt = s.weight ?? 0;
-                if (wt <= 0) continue;
-                const prev = baseline.get(ex.name) ?? 0;
-                if (wt > prev) baseline.set(ex.name, wt);
-            }
+                for (const s of ex.sets) {
+                    const wt = s.weight ?? 0;
+                    if (wt <= 0) continue;
+                    const prev = baseline.get(ex.name) ?? 0;
+                    if (wt > prev) baseline.set(ex.name, wt);
+                }
             }
         }
 
-        // ---- analyze today draft log ----
+        let topPR: { ex: string; weight: number; isPR: boolean } | null = null;
+        let totalSets = 0;
+        let totalVolume = 0;
+        const muscleGroups = new Set<string>();
+
+        for (const ex of log) {
+            muscleGroups.add(classify(ex.name));
+            for (const s of ex.sets) {
+                const w = Number(s.weight);
+                const r = Number(s.reps);
+                if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0) continue;
+                totalSets++;
+                totalVolume += w * r;
+                if (!topPR || w > topPR.weight) {
+                    const baseW = baseline.get(ex.name) ?? 0;
+                    topPR = { ex: ex.name, weight: w, isPR: baseW > 0 && w > baseW };
+                }
+            }
+        }
+
+        if (!topPR) {
+            return `${log.length} exercise${log.length > 1 ? "s" : ""} logged. Add working sets.`;
+        }
+
+        if (topPR.isPR) {
+            return `PR on ${topPR.ex} — ${topPR.weight}. New benchmark set.`;
+        }
+
+        const realGroups = [...muscleGroups].filter(g => g !== "general");
+        if (realGroups.length >= 2) {
+            return `${log.length} exercises across ${realGroups.join(" + ")}. Balanced session.`;
+        }
+
+        const baseW = baseline.get(topPR.ex) ?? 0;
+        if (baseW > 0) {
+            const ratio = topPR.weight / baseW;
+            if (ratio >= 0.9) return `Heavy day on ${topPR.ex} — close to your best.`;
+            if (ratio >= 0.7) return `Solid ${topPR.ex} at ${topPR.weight}. Volume is building.`;
+        }
+
+        if (totalSets >= 6) return `${totalSets} sets, ${Math.round(totalVolume).toLocaleString()} volume. Real work.`;
+        return `Top set: ${topPR.ex} at ${topPR.weight}. Keep stacking.`;
+    }, [log, currentVolume, currentExercise, history14]);
+
+    const coachLine = useMemo(() => {
+        const startedExercise = currentExercise.trim().length > 0;
+        const hasDraftInputs = sets.some((s) => s.weight.trim() !== "" || s.reps.trim() !== "");
+
+        // weekly session count (excluding today)
+        const today = todayKey();
+        const monday = isoMonday(today);
+        const sessionsThisWeek = history14.filter(
+            (w) => !w.restDay && w.date >= monday && w.date < today
+        ).length;
+
+        // ---- nothing started yet ----
+        if (log.length === 0 && currentVolume === 0 && !startedExercise && !hasDraftInputs) {
+            if (sessionsThisWeek === 0) return "Start of the week. Pick a lift and build some momentum.";
+            if (sessionsThisWeek >= 5) return "Busy week already. Keep this one short and sharp.";
+            if (sessionsThisWeek >= 3) return "Mid-week grind. Pick your main lift and keep it focused.";
+            return "Pick one lift. One clean set. Then decide if you want more.";
+        }
+
+        // ---- exercise selected, nothing logged yet ----
+        if (log.length === 0 && (startedExercise || hasDraftInputs || currentVolume > 0)) {
+            const hasWeight = sets.some((s) => s.weight.trim() !== "");
+            const hasReps = sets.some((s) => s.reps.trim() !== "");
+            if (startedExercise && !hasDraftInputs) return cueFor(currentExercise);
+            if (hasWeight && !hasReps) return "Add reps, then log the exercise.";
+            if (!hasWeight && hasReps) return "Add weight, then log the exercise.";
+            return "Finish filling out this exercise, then add it to the log.";
+        }
+
+        // ---- baseline from last 14 days ----
+        const baseline = new Map<string, number>();
+        for (const w of history14) {
+            if (w.restDay) continue;
+            for (const ex of w.exercises) {
+                for (const s of ex.sets) {
+                    const wt = s.weight ?? 0;
+                    if (wt <= 0) continue;
+                    const prev = baseline.get(ex.name) ?? 0;
+                    if (wt > prev) baseline.set(ex.name, wt);
+                }
+            }
+        }
+
+        // ---- analyze today log ----
         let totalSets = 0;
         let repsSum = 0;
         const todayTop = new Map<string, { w: number; r: number }>();
 
         for (const ex of log) {
             for (const s of ex.sets) {
-            const w = Number(s.weight);
-            const r = Number(s.reps);
-            if (Number.isFinite(w) && Number.isFinite(r) && w > 0 && r > 0) {
-                totalSets++;
-                repsSum += r;
-                const prev = todayTop.get(ex.name);
-                if (!prev || w > prev.w) todayTop.set(ex.name, { w, r });
-            }
+                const w = Number(s.weight);
+                const r = Number(s.reps);
+                if (Number.isFinite(w) && Number.isFinite(r) && w > 0 && r > 0) {
+                    totalSets++;
+                    repsSum += r;
+                    const prev = todayTop.get(ex.name);
+                    if (!prev || w > prev.w) todayTop.set(ex.name, { w, r });
+                }
             }
         }
 
@@ -196,39 +263,49 @@ useEffect(() => {
 
         const avgReps = repsSum / totalSets;
 
-        // main lift = heaviest top set today
         let mainEx: string | null = null;
         let mainW = -1;
         for (const [name, top] of todayTop.entries()) {
-            if (top.w > mainW) {
-            mainW = top.w;
-            mainEx = name;
-            }
+            if (top.w > mainW) { mainW = top.w; mainEx = name; }
         }
-        if (!mainEx) return "Good work. Save it clean and recover.";
+        if (!mainEx) return "Good work. Save it and recover.";
 
         const mainTop = todayTop.get(mainEx)!;
         const baseTop = baseline.get(mainEx) ?? 0;
-
         const hasBaseline = baseTop > 0;
         const ratio = hasBaseline ? mainTop.w / baseTop : 0;
 
-        // ---- deterministic ladder ----
+        // currently filling in next exercise mid-session
+        if (startedExercise && hasDraftInputs) {
+            return `${currentExercise}: ${cueFor(currentExercise)}`;
+        }
+
+        // PR on main lift
+        if (hasBaseline && mainTop.w > baseTop) {
+            return `New best on ${mainEx}. Lock in your form before adding more weight.`;
+        }
+
+        // close to all-time best
         if (hasBaseline && ratio >= 0.9) {
-            return `Relative heavy day on ${mainEx}. ${cueFor(mainEx)}`;
+            return `Heavy day on ${mainEx}. ${cueFor(mainEx)}`;
         }
 
-        if (avgReps >= 8) {
-            return `Higher-rep day. Control the lowering. ${cueFor(mainEx)}`;
+        // first time tracking this lift
+        if (!hasBaseline) {
+            return `No history for ${mainEx} yet — this sets your baseline.`;
         }
 
-        if (avgReps <= 5) {
-            return `Low-rep day. Full rest. Crisp reps. ${cueFor(mainEx)}`;
-        }
+        // rep range guidance
+        if (avgReps >= 10) return `High-rep day. Slow the eccentric down. ${cueFor(mainEx)}`;
+        if (avgReps >= 7)  return `Moderate reps. Control each one. ${cueFor(mainEx)}`;
+        if (avgReps <= 4)  return `Heavy territory. Full rest between every set. Stay tight.`;
+        if (avgReps <= 6)  return `Low-rep day. Treat each rep like it matters. ${cueFor(mainEx)}`;
 
-        if (totalSets <= 3) return "Short session is still a win. Save it clean.";
-        if (totalSets <= 8) return "Good pace. Don’t rush reps. Stay structured.";
-        return "That’s plenty. End on a clean set and recover.";
+        // session length + weekly fatigue
+        if (totalSets <= 3) return "Short session still counts. Wrap it up clean.";
+        if (totalSets <= 8) return "Good pace. Don't rush the reps. Stay structured.";
+        if (sessionsThisWeek >= 4) return "Busy week and a big session. Finish strong and recover well tonight.";
+        return "That's plenty of volume. End on a clean set and rest.";
     }, [log, currentVolume, currentExercise, sets, history14]);
 
     function addSet() {
@@ -283,25 +360,25 @@ useEffect(() => {
         try {
             const date = todayKey();
             const exercises = [...log].reverse().map((ex) => ({
-            name: ex.name,
-            sets: ex.sets.map((s) => ({
-                weight: s.weight.trim() === "" ? null : Number(s.weight),
-                reps: s.reps.trim() === "" ? null : Number(s.reps),
-            })),
+                name: ex.name,
+                sets: ex.sets.map((s) => ({
+                    weight: s.weight.trim() === "" ? null : Number(s.weight),
+                    reps: s.reps.trim() === "" ? null : Number(s.reps),
+                })),
             }));
 
             const res = await fetch("/api/workouts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ date, exercises }),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ date, exercises }),
             });
 
             const text = await res.text();
             console.log("saveWorkout:", res.status, text);
 
             if (!res.ok) {
-            alert("Save failed. Check console.");
-            return;
+                alert("Save failed. Check console.");
+                return;
             }
 
             localStorage.removeItem(STORAGE_KEY);
@@ -327,7 +404,10 @@ useEffect(() => {
             )}
 
             <div className="px-5 pt-6">
-                <TopPill title="Workout Log" />
+                <TopPill
+                    title="Workout Log"
+                    subtitle={new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                />
 
                 {/* Avatar name pill */}
                 <div className="mt-3">
@@ -335,7 +415,7 @@ useEffect(() => {
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-black/25">
                             <UserIcon className="h-4 w-4 text-white" />
                         </div>
-                        <div className="text-[13px] font-medium text-white">Avatar name</div>
+                        <div className="text-[13px] font-medium text-white">Buffy the Cat</div>
                     </div>
 
                     {/* two lines under avatar */}
@@ -516,16 +596,6 @@ useEffect(() => {
             </div>
 
             <div className="h-12" />
-        </div>
-    );
-}
-
-function TopPill({ title }: { title: string }) {
-    return (
-        <div className="relative h-[56px] w-full rounded-[18px] bg-[#DFE8FF]">
-            <div className="flex h-full items-center justify-center">
-                <span className="text-[22px] font-medium text-[#111827]">{title}</span>
-            </div>
         </div>
     );
 }

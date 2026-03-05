@@ -1,6 +1,7 @@
 import React from "react";
 import { useProfile } from "../hooks/useProfile";
 import type { Experience, Goal, Units } from "../profile";
+import { TopPill } from "../components/TopPill";
 
 export default function ProfilePage() {
     const { profile, setProfile, resetProfile } = useProfile();
@@ -179,16 +180,6 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="h-8" />
-            </div>
-        </div>
-    );
-}
-
-function TopPill({ title }: { title: string }) {
-    return (
-        <div className="relative h-[56px] w-full rounded-[18px] bg-[#DFE8FF]">
-            <div className="flex h-full items-center justify-center">
-                <span className="text-[22px] font-medium text-[#111827]">{title}</span>
             </div>
         </div>
     );

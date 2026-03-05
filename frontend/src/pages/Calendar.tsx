@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ApiWorkout } from "../components/insights";
+import { TopPill } from "../components/TopPill";
 
 type DayKind = "workout" | "rest" | "empty";
 
@@ -31,15 +32,6 @@ function monthLabel(date: Date) {
     return date.toLocaleString(undefined, { month: "long", year: "numeric" });
 }
 
-function TopPill({ title }: { title: string }) {
-    return (
-        <div className="relative h-[56px] w-full rounded-[18px] bg-[#DFE8FF]">
-            <div className="flex h-full items-center justify-center">
-                <span className="text-[22px] font-medium text-[#111827]">{title}</span>
-            </div>
-        </div>
-    );
-}
 
 function SectionPill({ title }: { title: string }) {
     return (
