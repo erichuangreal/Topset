@@ -165,4 +165,13 @@ router.get("/", async (req, res) => {
   });
 });
 
+router.delete("/all", async (_req, res) => {
+  try {
+    await prisma.workout.deleteMany({});
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message ?? "server_error" });
+  }
+});
+
 export default router;

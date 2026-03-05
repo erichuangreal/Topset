@@ -188,21 +188,21 @@ export default function Home() {
 
             <div className="mt-6 flex justify-center">
                 <div
-                    className={`h-[210px] w-[270px] rounded-[var(--radius-card)] shadow-[0_10px_25px_rgba(0,0,0,0.08)] ${
-                        mood === "locked in"
-                            ? "bg-gradient-to-br from-emerald-50 to-indigo-50"
-                            : mood === "steady"
-                              ? "bg-gradient-to-br from-[var(--color-primary-light)] to-white"
-                              : mood === "sore"
-                                ? "bg-gradient-to-br from-amber-50 to-orange-50"
-                                : "bg-gradient-to-br from-gray-50 to-slate-50"
-                    }`}
+                    className="h-[210px] w-[270px] overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)]"
                 >
-                    <div className="flex h-full items-center justify-center">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/80 shadow-inner">
-                            <UserIcon className="h-10 w-10 text-[var(--color-text)] opacity-60" />
+                    {mood ? (
+                        <img
+                            src={"/avatar-" + mood.replace(" ", "-") + ".png"}
+                            alt={"Gym cat feeling " + mood}
+                            className="h-full w-full object-contain object-center"
+                        />
+                    ) : (
+                        <div className="flex h-full items-center justify-center">
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/80 shadow-inner">
+                                <UserIcon className="h-10 w-10 text-[var(--color-text)] opacity-60" />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 

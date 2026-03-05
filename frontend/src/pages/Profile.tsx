@@ -24,11 +24,23 @@ export default function ProfilePage() {
         URL.revokeObjectURL(url);
     };
 
-    const resetAllData = () => {
+    const resetAllData = async () => {
         const ok = window.confirm(
-            "Reset all local Lifting Tracker data? This will clear drafts, profile, and any saved local data."
+            "Reset ALL data? This will permanently delete all workouts from the database and clear your local profile and drafts."
         );
         if (!ok) return;
+
+        try {
+            const res = await fetch("/api/workouts/all", { method: "DELETE" });
+            const data = await res.json();
+            if (!res.ok || data?.ok === false) {
+                alert("Failed to delete workouts from the server. Please try again.");
+                return;
+            }
+        } catch {
+            alert("Could not reach the server. Check that the backend is running.");
+            return;
+        }
 
         const keys: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -37,6 +49,7 @@ export default function ProfilePage() {
         }
         keys.forEach((k) => localStorage.removeItem(k));
         resetProfile();
+        alert("All data has been reset.");
     };
 
     // --- Toggles / cyclers ---
