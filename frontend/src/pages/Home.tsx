@@ -1,17 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import FlameIcon from "../assets/Subtract.svg?react";
 import { useEffect, useState } from "react";
-import { computeMood, computeTodayCoach, computeStreak, computeWeeklyHighlights, todayKey, type ApiWorkout } from "../components/insights";
+import {
+    computeMood,
+    computeTodayCoach,
+    computeStreak,
+    computeWeeklyHighlights,
+    startOfIsoWeek,
+    todayKey,
+    type ApiWorkout,
+} from "../components/insights";
+import type { MoodLabel } from "../components/insights";
 
 // encouragement lines
 const ENCOURAGEMENT_LINES = [
     "Future you is watching — and proud.",
     "One more rep of effort. Not weight.",
-    "Keep the streak alive. Even if it’s light.",
-    "You don’t need a big day everyday.",
+    "Keep the streak alive. Even if it's light.",
+    "You don't need a big day everyday.",
     "Stay honest with the work.",
     "Nothing fancy. Just show up.",
-    "You’re building something, slowly.",
+    "You're building something, slowly.",
     "Nobody to prove to, but yourself.",
     "This is how it's done.",
     "Keep it clean.",
@@ -22,13 +31,47 @@ function pickRandomLine(lines: string[]) {
     return lines[Math.floor(Math.random() * lines.length)];
 }
 
+function toKey(d: Date) {
+    return d.toISOString().slice(0, 10);
+}
+
+function formatLastSessionLabel(dateStr: string, today: string): string {
+    const d = new Date(dateStr + "T00:00:00");
+    const t = new Date(today + "T00:00:00");
+    const diffDays = Math.floor((t.getTime() - d.getTime()) / 86400000);
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString(undefined, { weekday: "short" });
+}
+
+function getLastWorkoutSummary(workouts: ApiWorkout[]): { date: string; summary: string; shortLabel: string } | null {
+    const sorted = [...workouts].filter((w) => !w.restDay).sort((a, b) => (b.date > a.date ? 1 : -1));
+    const w = sorted[0];
+    if (!w) return null;
+    const today = todayKey();
+    const exerciseCount = w.exercises.length;
+    const setCount = w.exercises.reduce((s, ex) => s + ex.sets.length, 0);
+    const names = w.exercises.map((e) => e.name).slice(0, 3).join(", ");
+    const summary = names
+        ? `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""}, ${setCount} sets — ${names}${w.exercises.length > 3 ? "…" : ""}`
+        : `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""}, ${setCount} sets`;
+    return {
+        date: w.date,
+        summary,
+        shortLabel: formatLastSessionLabel(w.date, today),
+    };
+}
+
 export default function Home() {
     const nav = useNavigate();
     const [line, setLine] = useState("");
     const [streak, setStreak] = useState(0);
-    const [mood, setMood] = useState("meh");
+    const [mood, setMood] = useState<MoodLabel | "">("");
     const [weekly, setWeekly] = useState<string[]>([]);
     const [coachLine, setCoachLine] = useState("-");
+    const [thisWeekCount, setThisWeekCount] = useState(0);
+    const [lastWorkout, setLastWorkout] = useState<{ date: string; summary: string; shortLabel: string } | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -46,6 +89,13 @@ export default function Home() {
             setStreak(computeStreak(workouts, end));
             setMood(computeMood(workouts, end));
             setWeekly(computeWeeklyHighlights(workouts, end));
+
+            const monday = startOfIsoWeek(new Date(end + "T00:00:00"));
+            const weekStart = toKey(monday);
+            const weekWorkouts = workouts.filter((w) => w.date >= weekStart && w.date <= end);
+            const weekDates = new Set(weekWorkouts.map((w) => w.date));
+            setThisWeekCount(weekDates.size);
+            setLastWorkout(getLastWorkoutSummary(workouts));
 
             const rDay = await fetch(`/api/workouts?date=${end}`);
             const jDay = await rDay.json();
@@ -85,74 +135,158 @@ export default function Home() {
     alert("Rest day logged");
     }
 
+    const moodColorClass =
+        mood === "locked in"
+            ? "text-emerald-600"
+            : mood === "steady"
+              ? "text-[var(--color-primary)]"
+              : mood === "sore"
+                ? "text-amber-600"
+                : mood === "drained"
+                  ? "text-[var(--color-text-subtle)]"
+                  : "text-[var(--color-text-subtle)]";
+
     return (
-        <div className="px-5 pt-6">
+        <div className="px-5 pt-6 pb-8">
             <TopPill title="Home" />
 
-            <div className="mt-5 flex items-center justify-between gap-3">
-                <p className="flex-1 pl-10 text-left text-[12px] text-[#6B7280] leading-snug">
-                    {line}
-                </p>
+            <p className="mt-5 pl-1 text-left text-[14px] leading-snug text-[#374151]">
+                {line}
+            </p>
 
-                <div className="flex h-10 items-center gap-2 rounded-[14px] bg-[#DFE8FF] px-4">
-                    <span className="text-[20px] font-medium leading-none text-[#111827]">
+            <div className="mt-4 grid grid-cols-3 gap-2">
+                <button
+                    type="button"
+                    onClick={() => document.getElementById("highlights")?.scrollIntoView({ behavior: "smooth" })}
+                    className="flex flex-col items-center justify-center gap-1 rounded-[var(--radius-pill)] bg-[var(--color-primary-light)] py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                >
+                    <span className="flex items-center gap-1 text-[18px] font-semibold leading-none text-[var(--color-text)]">
                         {streak}
+                        <FlameIcon className="h-5 w-5 text-[var(--color-primary)]" />
                     </span>
-                    <FlameIcon className="h-5 w-5 text-[#5B63F6]" />
-                </div>
+                    <span className="text-[11px] font-medium text-[var(--color-text-muted)]">Streak</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => nav("/stats")}
+                    className="flex flex-col items-center justify-center gap-1 rounded-[var(--radius-pill)] bg-[var(--color-primary-light)] py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                >
+                    <span className="text-[18px] font-semibold leading-none text-[var(--color-text)]">{thisWeekCount}</span>
+                    <span className="text-[11px] font-medium text-[var(--color-text-muted)]">This week</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => nav("/calendar")}
+                    className="flex flex-col items-center justify-center gap-1 rounded-[var(--radius-pill)] bg-[var(--color-primary-light)] py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                >
+                    <span className="text-[14px] font-semibold leading-none text-[var(--color-text)]">
+                        {lastWorkout?.shortLabel ?? "—"}
+                    </span>
+                    <span className="text-[11px] font-medium text-[var(--color-text-muted)]">Last session</span>
+                </button>
             </div>
 
             <div className="mt-6 flex justify-center">
-                <div className="h-[210px] w-[270px] rounded-[18px] bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)]">
+                <div
+                    className={`h-[210px] w-[270px] rounded-[var(--radius-card)] shadow-[0_10px_25px_rgba(0,0,0,0.08)] ${
+                        mood === "locked in"
+                            ? "bg-gradient-to-br from-emerald-50 to-indigo-50"
+                            : mood === "steady"
+                              ? "bg-gradient-to-br from-[var(--color-primary-light)] to-white"
+                              : mood === "sore"
+                                ? "bg-gradient-to-br from-amber-50 to-orange-50"
+                                : "bg-gradient-to-br from-gray-50 to-slate-50"
+                    }`}
+                >
                     <div className="flex h-full items-center justify-center">
-                        <div className="text-[12px] text-[#9CA3AF]">(illustration)</div>
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/80 shadow-inner">
+                            <UserIcon className="h-10 w-10 text-[var(--color-text)] opacity-60" />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-5 text-center text-[18px] text-[#9CA3AF]">
-                Today, I’m feeling {mood}.
+            <p className={`mt-4 text-center text-[17px] font-semibold ${moodColorClass}`}>
+                Today, I'm feeling {mood || "…"}.
+            </p>
+
+            <div className="mt-5 rounded-xl bg-white px-4 py-3 shadow-sm">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                    Today's focus
+                </h3>
+                <p className="mt-1 text-[14px] leading-snug text-[var(--color-text)]">{coachLine}</p>
             </div>
 
-            <div className="mt-6 flex items-center justify-between gap-4">
-                <button
-                    onClick={() => nav("/log")}
-                    className="h-[46px] flex-1 rounded-full !text-[11px] font-medium text-white shadow-[0_10px_18px_rgba(99,102,241,0.20)] active:scale-[0.99]"
-                    style={{ backgroundColor: "#6366F1" }}
-                >
-                    Log today’s session
-                </button>
+            <div className="mt-4 rounded-xl bg-white px-4 py-3 shadow-sm">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                    Last workout
+                </h3>
+                {lastWorkout ? (
+                    <>
+                        <p className="mt-1 text-[14px] font-medium text-[var(--color-text)]">
+                            {new Date(lastWorkout.date + "T12:00:00").toLocaleDateString(undefined, {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                            })}
+                        </p>
+                        <p className="mt-0.5 text-[13px] text-[var(--color-text-muted)]">{lastWorkout.summary}</p>
+                    </>
+                ) : (
+                    <p className="mt-1 text-[14px] text-[var(--color-text-muted)]">
+                        No sessions yet — log your first.
+                    </p>
+                )}
+            </div>
 
+            <div className="mt-6 flex gap-3">
                 <button
+                    type="button"
+                    onClick={() => nav("/log")}
+                    className="h-[46px] flex-1 rounded-full bg-[var(--color-primary)] text-[13px] font-medium text-white shadow-[0_10px_18px_rgba(99,102,241,0.25)] transition hover:brightness-110 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                >
+                    Log today's session
+                </button>
+                <button
+                    type="button"
                     onClick={logRestDay}
-                    className="h-[46px] flex-1 rounded-full bg-[#9AA0A6] !text-[11px] font-medium text-white shadow-[0_10px_18px_rgba(0,0,0,0.10)] active:scale-[0.99]"
+                    className="h-[46px] flex-1 rounded-full border-2 border-[#D1D5DB] bg-transparent text-[13px] font-medium text-[var(--color-text-muted)] transition hover:bg-gray-100 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
                 >
                     Log rest day
                 </button>
             </div>
 
-            <div className="mt-7 overflow-hidden rounded-[18px]">
-                <div className="bg-[#DFE8FF] px-5 py-4">
-                    <h2 className="text-[22px] font-medium text-[#111827]">
-                        Highlight of the week
-                    </h2>
+            <div id="highlights" className="mt-6 overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[0_4px_14px_rgba(0,0,0,0.06)]">
+                <div className="border-b border-[#E5E7EB] px-4 py-3">
+                    <h2 className="text-[18px] font-semibold text-[var(--color-text)]">Highlight of the week</h2>
                 </div>
-
-                <div className="px-5 py-5">
-                    <div className="space-y-6">
+                <div className="px-4 py-4">
+                    <div className="space-y-4">
                         <HighlightRow
-                            icon={<CrownIcon className="h-6 w-6 text-[#111827]" />}
-                            text={weekly[0] ?? "“Log once this week: keep it alive”"}
+                            icon={<CrownIcon className="h-5 w-5 text-[var(--color-primary)]" />}
+                            text={weekly[0] ?? "Log once this week: keep it alive."}
                         />
+                        <div className="border-b border-[#F3F4F6]" />
                         <HighlightRow
-                            icon={<TrophyIcon className="h-6 w-6 text-[#111827]" />}
-                            text={weekly[1] ?? "“Heaviest set: coming soon”"}
+                            icon={<TrophyIcon className="h-5 w-5 text-[var(--color-primary)]" />}
+                            text={weekly[1] ?? "Heaviest set: coming soon."}
                         />
+                        <div className="border-b border-[#F3F4F6]" />
                         <HighlightRow
-                            icon={<GiftIcon className="h-6 w-6 text-[#111827]" />}
-                            text={weekly[2] ?? "“Most consistent lift: coming soon”"}
+                            icon={<GiftIcon className="h-5 w-5 text-[var(--color-primary)]" />}
+                            text={weekly[2] ?? "Most consistent lift: coming soon."}
                         />
                     </div>
+                    <a
+                        href="/stats"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            nav("/stats");
+                        }}
+                        className="mt-4 block text-center text-[13px] font-medium text-[var(--color-primary)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2"
+                    >
+                        See full stats
+                    </a>
                 </div>
             </div>
 
@@ -163,14 +297,13 @@ export default function Home() {
 
 function TopPill({ title }: { title: string }) {
     return (
-        <div className="relative h-[56px] w-full rounded-[18px] bg-[#DFE8FF]">
-            {/*Circle button (placeholder image later)*/}
+        <div className="relative h-[56px] w-full rounded-[var(--radius-card)] border border-[#d0d9f7] bg-gradient-to-r from-[var(--color-primary-light)] to-[#e8ecff] shadow-[0_2px_8px_rgba(99,102,241,0.08)]">
             <button
                 type="button"
                 aria-label="Avatar"
-                className="absolute left-4 top-1/2 -translate-y-1/2"
+                className="absolute left-4 top-1/2 -translate-y-1/2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 rounded-full"
             >
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#111827] shadow-[0_4px_10px_rgba(0,0,0,0.18)] active:scale-[0.98]">
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--color-text)] shadow-[0_4px_10px_rgba(0,0,0,0.18)] active:scale-[0.98] ring-2 ring-white/50">
                     {/* Replace with avatar image later */}
                     {/* <img src="/assets/avatar.png" alt="avatar" className="h-full w-full object-cover" /> */}
                     <UserIcon className="h-5 w-5 text-white opacity-90" />
@@ -178,7 +311,7 @@ function TopPill({ title }: { title: string }) {
             </button>
 
             <div className="flex h-full items-center justify-center">
-                <span className="text-[22px] font-medium text-[#111827]">{title}</span>
+                <span className="text-[22px] font-semibold text-[var(--color-text)]">{title}</span>
             </div>
         </div>
     );
@@ -187,8 +320,8 @@ function TopPill({ title }: { title: string }) {
 function HighlightRow({ icon, text }: { icon: React.ReactNode; text: string }) {
     return (
         <div className="flex items-start gap-4">
-            <div className="mt-[2px]">{icon}</div>
-            <p className="text-[13px] text-[#9CA3AF]">{text}</p>
+            <div className="mt-[2px] shrink-0">{icon}</div>
+            <p className="text-[13px] leading-snug text-[var(--color-text-muted)]">{text}</p>
         </div>
     );
 }
