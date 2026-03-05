@@ -1,5 +1,5 @@
 # Buffy, a workout logging app
-<ins>Open demo on MOBILE for best viewing experience.</ins>
+<ins>Open demo on MOBILE for optimal viewing experience.</ins>
 
 Live Demo: https://topset.erichuangreal.dev/
 
