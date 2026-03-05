@@ -8,9 +8,9 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: lifting
-      MYSQL_USER: lifting_app
-      MYSQL_PASSWORD: lifting_password
+      MYSQL_DATABASE: topset 
+      MYSQL_USER: topset_app
+      MYSQL_PASSWORD: topset_password
     ports:
       - "3406:3306"
     volumes:
@@ -29,7 +29,7 @@ services:
     container_name: topset-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: mysql://lifting_app:lifting_password@db:3306/lifting
+      DATABASE_URL: mysql://topset_app:topset_password@db:3306/topset
       PORT: 8002
       NODE_ENV: production
     ports:
