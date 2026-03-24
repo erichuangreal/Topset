@@ -8,9 +8,9 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: lifting
-      MYSQL_USER: lifting_app
-      MYSQL_PASSWORD: lifting_password
+      MYSQL_DATABASE: topset 
+      MYSQL_USER: topset_app
+      MYSQL_PASSWORD: topset_password
     ports:
       - "3406:3306"
     volumes:

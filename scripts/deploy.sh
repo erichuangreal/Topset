@@ -54,7 +54,7 @@ MYSQL_PASSWORD=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 24)
 # Create backend .env file
 echo "📝 Creating backend/.env file..."
 cat > backend/.env << EOF
-DATABASE_URL="mysql://lifting_app:${MYSQL_PASSWORD}@db:3306/lifting"
+DATABASE_URL="mysql://topset_app:${MYSQL_PASSWORD}@db:3306/topset"
 PORT=8002
 NODE_ENV=production
 EOF
@@ -75,8 +75,8 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: lifting
-      MYSQL_USER: lifting_app
+      MYSQL_DATABASE: topset
+      MYSQL_USER: topset_app
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "127.0.0.1:3406:3306"  # Only accessible from localhost
@@ -98,7 +98,7 @@ services:
     container_name: topset-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: mysql://lifting_app:${MYSQL_PASSWORD}@db:3306/lifting
+      DATABASE_URL: mysql://topset_app:${MYSQL_PASSWORD}@db:3306/topset
       PORT: 8002
       NODE_ENV: production
     ports:
@@ -144,9 +144,9 @@ cat > .credentials << EOF
 # Keep this file secure!
 
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-MYSQL_USER=lifting_app
+MYSQL_USER=topset_app
 MYSQL_PASSWORD=${MYSQL_PASSWORD}
-DATABASE_URL=mysql://lifting_app:${MYSQL_PASSWORD}@db:3306/lifting
+DATABASE_URL=mysql://topset_app:${MYSQL_PASSWORD}@db:3306/topset
 EOF
 chmod 600 .credentials
 

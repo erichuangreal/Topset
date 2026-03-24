@@ -88,7 +88,7 @@ if docker compose ps | grep -q "Up"; then
     echo "   docker compose down"
     echo "   or: ./scripts/docker-stop.sh"
     echo ""
-    echo "Happy lifting! 💪"
+    echo "Happy Topset! 💪"
 else
     echo ""
     echo "⚠️  Some services may not be running properly."
