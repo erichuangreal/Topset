@@ -1,173 +1,273 @@
-# Topset, a workout logging app
 <ins>Open demo on MOBILE for optimal viewing experience.</ins>
 
-Live Demo: https://topset.erichuangreal.dev/
+**Live Demo:** https://topset.erichuangreal.dev/
 
-I created a workout logging app that breaks off from the standard number-crunching app. Instead, I focused on creating a more encouraging and humanizing approach to lifting by focusing on an avatar that grows with the user's progress. It has different mood settings that is determined by how often and how much the user is training. I aimed to make this app a low-stakes environment where the user isn't swamped by numbers on the UI, but is met with a friendly avatar coach that analyzes user progression, plateaus, prs, and deload trends and provides dynamic and constructive criticism.
+A workout logging app that breaks from the standard number-crunching approach. Instead of raw metrics, Buffy focuses on an avatar coach that grows with the user's progress. Mood is derived from training consistency and volume. Feedback is deterministic, encouraging, and low-stakes.
 
-Much of the algorithm is hidden behind the UI, leaving only the highlights, coaching tips, and avatar emotions for the user to see.
+Much of the algorithm is hidden behind the UI — only highlights, coaching tips, and avatar emotions are surfaced.
 
-1. Highlights are chosen for the day and week to make the user proud of his or her achievements.
-2. Coaching tips are unique for each and every set the user does, and I will be looking into expanding into ML-supported advice.
-3. The avatar's emotions change based on the volume and intensity of the user's baseline training for the past 14 days.
-
----
-
-## Tech stack
-- React + TypeScript
-- Vite
-- Tailwind CSS
-- Custom React hooks for state management
-
-## Backend
-- Node.js + Express
-- MySQL database
-- Prisma ORM
-- REST API
-
-## Core Features
-- React + TypeScript frontend (Vite) with Tailwind UI
-- Multi-page layout: Home, Log Workout, Calendar, Stats, Profile
-- Exercise library with dynamic set logging (weight + reps)
-- Draft workout state with daily reset and local-first persistence
-- Node.js backend with Prisma ORM and REST API (GET / POST workouts)
-
-## Behavioral & Algorithmic Highlights
-- Avatar-driven UX that reacts to user consistency and workout completion
-- Lightweight state algorithms to track streaks, missed days, and effort signals
-- Contextual encouragement and tips generated from recent workout patterns
-- Designed to reinforce habit-building without aggressive gamification
+1. **Highlights** are chosen for the day and week to surface meaningful wins.
+2. **Coaching tips** are unique to each set based on lift category, rep range, and fatigue state.
+3. **Avatar mood** changes based on training volume and consistency over the past 14 days.
 
 ---
 
-## Setup (Local Demo)
+## Tech Stack
 
-Running the full application locally requires Node.js, MySQL, and npm. The app consists of a React frontend, a Node.js backend, and a MySQL database.
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 19, TypeScript, Vite 7, React Router 7, Tailwind CSS 4 |
+| **Backend** | Java 21, Spring Boot 3.3, Spring Data JPA, Hibernate 6 |
+| **Database** | MySQL 8 |
+| **Migrations** | Flyway |
+| **Validation** | Jakarta Bean Validation |
+| **Ops** | Docker, Docker Compose, Nginx |
+
+---
+
+## Project Structure
+
+```
+Topset/
+├── docker-compose.yml       Full stack (dev / local)
+├── backend-java/            Spring Boot API (Java 21)
+│   ├── Dockerfile
+│   ├── pom.xml
+│   └── src/
+├── frontend/                React + Vite SPA
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── src/
+└── scripts/                 Deploy / firewall helpers
+```
+
+---
+
+## Quick Start (Docker — recommended)
+
+Requires [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/).
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/erichuangreal/Topset.git
+cd Topset
+```
+
+### 2. Start all services
+
+```bash
+docker compose up -d --build
+```
+
+This starts three containers:
+
+| Container | Description | Port |
+|---|---|---|
+| `topset-db` | MySQL 8 | `localhost:3406` |
+| `topset-backend-java` | Spring Boot API | `localhost:8002` |
+| `topset-frontend` | Nginx serving React SPA | `localhost:5273` |
+
+Open **http://localhost:5273** in your browser.
+
+> On first run, Flyway automatically creates all database tables. No manual migration step needed.
+
+---
+
+## Docker Commands
+
+### Start everything (build images if needed)
+
+```bash
+docker compose up -d --build
+```
+
+### Start without rebuilding (faster if no code changes)
+
+```bash
+docker compose up -d
+```
+
+### Start individual services
+
+```bash
+docker compose up -d db                  # database only
+docker compose up -d backend-java        # backend only (requires db)
+docker compose up -d --build frontend    # frontend only (rebuilds Nginx image)
+```
+
+### View logs
+
+```bash
+docker compose logs -f backend-java      # follow backend logs
+docker compose logs -f frontend          # follow frontend logs
+docker compose logs -f                   # all services
+```
+
+### Stop all services
+
+```bash
+docker compose down
+```
+
+### Stop and remove all data (wipes the database volume)
+
+```bash
+docker compose down -v
+```
+
+### Rebuild a single service
+
+```bash
+docker compose up -d --build backend-java
+docker compose up -d --build frontend
+```
+
+---
+
+## Production Deployment
+
+### 1. Set environment variables
+
+Create a `backend-java/.env` file (or pass via your hosting platform):
+
+```env
+DB_HOST=your-mysql-host
+DB_PORT=3306
+DB_NAME=lifting
+DB_USER=lifting_app
+DB_PASS=your_secure_password
+PORT=8002
+```
+
+### 2. Use a production Docker Compose override
+
+Create `docker-compose.prod.yml`:
+
+```yaml
+services:
+  db:
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports: []          # don't expose MySQL publicly
+
+  backend-java:
+    environment:
+      DB_HOST: db
+      DB_PASS: ${MYSQL_PASSWORD}
+    restart: always
+
+  frontend:
+    restart: always
+```
+
+Run with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+### 3. Health check
+
+```bash
+curl http://your-server:8002/health
+# {"ok":true}
+```
+
+### Useful production commands
+
+```bash
+# Pull latest code and rebuild
+git pull && docker compose up -d --build
+
+# View backend logs in production
+docker logs topset-backend-java -f --tail 100
+
+# Restart backend without downtime
+docker compose up -d --no-deps backend-java
+
+# Backup the database
+docker exec topset-db mysqldump -u root -prootpassword lifting > backup.sql
+
+# Restore from backup
+docker exec -i topset-db mysql -u root -prootpassword lifting < backup.sql
+```
+
+---
+
+## Local Development (without Docker)
 
 ### Requirements
 
-- Node.js 18 or newer (Node 20 LTS recommended)
-- npm (included with Node.js)
-- MySQL 8 or newer
-- Git (optional)
+- Java 21 (e.g. [Eclipse Temurin](https://adoptium.net/))
+- Maven 3.9+
+- Node.js 20 LTS + pnpm
+- MySQL 8 running locally
 
-You can verify installations using `node -v`, `npm -v`, and `mysql --version`.
+### Backend
 
----
+```bash
+cd backend-java
 
-### Database
+# Create backend-java/.env with your local DB credentials
+cp .env.example .env   # edit as needed
 
-MySQL must be running locally.  
-A database named `lifting` is required, along with a user that has permission to create and alter tables.
+# Run in dev mode (requires Maven)
+mvn spring-boot:run
+# API available at http://localhost:8002
+```
 
-Example SQL configuration:
+### Frontend
 
-`CREATE DATABASE lifting;`  
-`CREATE USER 'lifting_app'@'localhost' IDENTIFIED BY 'your_password';`  
-`GRANT ALL PRIVILEGES ON lifting.* TO 'lifting_app'@'localhost';`  
-`FLUSH PRIVILEGES;`
+```bash
+cd frontend
+pnpm install
+pnpm dev
+# App available at http://localhost:5173
+```
 
----
-
-### Backend Configuration
-
-The backend requires a `.env` file located in the `backend/` directory.
-
-Example contents:
-
-`DATABASE_URL="mysql://lifting_app:your_password@localhost:3306/lifting"`  
-`PORT=3001`
-
-Backend dependencies are installed using `npm install`.
-
-Prisma client generation and database migrations are run with  
-`npx prisma generate` and `npx prisma migrate dev`.
-
-The backend server is started using `npm run dev` and runs on `http://localhost:3001`.
+The Vite dev server proxies `/api/*` to `http://localhost:8002`.
 
 ---
 
-### Frontend Configuration
+## API Endpoints
 
-Frontend dependencies are installed from the `frontend/` directory using `npm install`.
+All endpoints are prefixed with `/api/workouts`.
 
-The frontend development server is started using `npm run dev` and runs on `http://localhost:5173`.
-
-Once both frontend and backend are running, the application can be accessed by opening `http://localhost:5173` in a browser.
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `POST` | `/api/workouts` | Save a full workout (exercises + sets) |
+| `POST` | `/api/workouts/rest` | Mark a rest day |
+| `GET` | `/api/workouts?date=YYYY-MM-DD` | Get workouts for a specific day |
+| `GET` | `/api/workouts/range?start=&end=` | Get workouts in a date range |
+| `DELETE` | `/api/workouts/all` | Delete all workouts |
 
 ---
 
 ## Application Overview
 
-Buffy is designed to be a low-stakes, encouraging environment for lifting.  
-Rather than focusing on optimization or competition, the app emphasizes consistency, intent, and long-term habit formation.
+Buffy is a low-stakes, encouraging environment for lifting. Rather than optimisation or competition, the app emphasises consistency, intent, and long-term habit formation.
 
-All coaching output is deterministic. Given the same workout data and history, the same feedback is always produced.
+All coaching output is **deterministic** — given the same workout data and history, the same feedback is always produced. No AI, no randomness.
 
----
+### Pages
 
-## Navigation
+| Page | Description |
+|---|---|
+| **Home** | Avatar coach, mood state, recent highlights |
+| **Log Workout** | Exercise selection, set logging (weight + reps), live coaching tips |
+| **Calendar** | Visual training history, consistency view |
+| **Stats** | Aggregated performance trends (unit-aware: kg / lb) |
+| **Profile** | Units, experience level, data reset |
 
-### Home
-Displays the current coaching state, avatar feedback, and recent highlights.  
-Acts as the primary overview of progress and momentum.
+### Architecture Notes
 
-### Log Workout
-The main interaction surface for the app.  
-Users select exercises, log sets (weight and reps), and receive contextual coaching feedback.  
-Draft-safe logging ensures workouts are not lost if the page is refreshed or closed.
-
-### Calendar
-Provides a visual overview of training days.  
-Used internally by the coaching engine to evaluate consistency, streaks, and gaps.
-
-### Stats
-Displays aggregated performance insights.  
-All calculations are unit-aware (kg / lb) and emphasize trends rather than raw tables.
-
-### Profile
-Allows configuration of units, experience level, and goals.  
-Includes data export and reset functionality.
-
----
-
-## Core Features
-
-### Workout Logging
-- Exercise-based workout structure
-- Multiple sets per exercise
-- Draft-safe logging with automatic daily reset
-- Local-first persistence for reliability
-
-### Exercise Library
-- Predefined compound and accessory lifts
-- Consistent naming enables clean statistics and reliable coaching logic
-- Designed for future custom exercise support
-
-### Avatar-Driven Coaching
-- A persistent virtual coach accompanies the user across pages
-- Avatar emotion is computed from training consistency, workload, and fatigue
-- Emotional state influences tone, highlights, and feedback intensity
-
-### Deterministic Coaching Engine
-- Rule-based and fully deterministic
-- Analyzes current workout drafts and a rolling 14-day training baseline
-- Adapts feedback based on relative intensity, volume, and frequency trends
-
-### Contextual Coaching Tips
-- Every logged set receives context-aware feedback
-- Tips adapt based on lift category, rep range, relative intensity, and fatigue state
-- Emphasis shifts between technique, control, and restraint as needed
-
-### Highlight System
-- Surfaces a small number of meaningful wins
-- Includes relative heavy sets, rep PRs, consistency wins, and volume milestones
-- Avoids noisy or ego-driven metrics
-
-### Stats Without Overload
-- Focuses on high-signal metrics only
-- Unit-aware across the entire app
-- Avoids spreadsheet-style UI
+- **Coaching logic runs entirely client-side** — no server round-trips for tips or highlights
+- **Draft workouts** are persisted in `localStorage` with a daily reset (survive page refresh)
+- **Profile/settings** are `localStorage`-only (no account system yet)
+- **Backend** is pure persistence — REST API backed by MySQL via JPA
 
 ---
 
@@ -178,14 +278,6 @@ Includes data export and reset functionality.
 - High signal, low noise UI
 - Encouragement without aggressive gamification
 - Coaching adapts to the user, not global standards
-
----
-
-## Notes
-
-This setup reflects a development and demo environment.  
-The frontend can load without the backend, but persistence and statistics require the backend and database.  
-All coaching logic is computed client-side from logged workout data.
 
 ---
 
