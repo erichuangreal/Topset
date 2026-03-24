@@ -1,0 +1,51 @@
+#!/bin/sh
+# Maven Wrapper script
+# ----------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.
+# ----------------------------------------------------------------------------
+
+if [ -z "$JAVA_HOME" ] ; then
+  JAVACMD=`which java`
+else
+  JAVACMD="$JAVA_HOME/bin/java"
+fi
+
+if [ ! -x "$JAVACMD" ] ; then
+  echo "Error: JAVA_HOME is not defined correctly." >&2
+  echo "  We cannot execute $JAVACMD" >&2
+  exit 1
+fi
+
+MAVEN_PROJECTBASEDIR="${MAVEN_BASEDIR:-"$(pwd)"}"
+MAVEN_WRAPPER_JAR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar"
+MAVEN_WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+
+# Read distributionUrl from properties file
+DISTRIBUTION_URL=$(grep 'distributionUrl' "$MAVEN_WRAPPER_PROPERTIES" | sed 's/distributionUrl=//')
+
+# Download Maven if not already cached
+MAVEN_USER_HOME="${MAVEN_USER_HOME:-$HOME/.m2}"
+MAVEN_DIST_DIR="$MAVEN_USER_HOME/wrapper/dists"
+MAVEN_ZIP_NAME=$(basename "$DISTRIBUTION_URL")
+MAVEN_DIR_NAME="${MAVEN_ZIP_NAME%.zip}"
+MAVEN_HOME="$MAVEN_DIST_DIR/$MAVEN_DIR_NAME"
+
+if [ ! -d "$MAVEN_HOME" ]; then
+  mkdir -p "$MAVEN_HOME"
+  echo "Downloading Maven from $DISTRIBUTION_URL"
+  if command -v curl > /dev/null; then
+    curl -fsSL -o "$MAVEN_HOME/$MAVEN_ZIP_NAME" "$DISTRIBUTION_URL"
+  elif command -v wget > /dev/null; then
+    wget -q -O "$MAVEN_HOME/$MAVEN_ZIP_NAME" "$DISTRIBUTION_URL"
+  else
+    echo "Error: Neither curl nor wget found." >&2
+    exit 1
+  fi
+  unzip -q "$MAVEN_HOME/$MAVEN_ZIP_NAME" -d "$MAVEN_HOME"
+  mv "$MAVEN_HOME/$MAVEN_DIR_NAME"/* "$MAVEN_HOME/"
+  rm -f "$MAVEN_HOME/$MAVEN_ZIP_NAME"
+fi
+
+MAVEN_BIN="$MAVEN_HOME/bin/mvn"
+exec "$MAVEN_BIN" "$@"

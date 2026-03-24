@@ -21,26 +21,25 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API
-  backend:
+  # Backend API (Java / Spring Boot)
+  backend-java:
     build:
-      context: ./backend
+      context: ./backend-java
       dockerfile: Dockerfile
-    container_name: topset-backend
+    container_name: topset-backend-java
     restart: unless-stopped
     environment:
-      DATABASE_URL: mysql://lifting_app:lifting_password@db:3306/lifting
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: lifting
+      DB_USER: lifting_app
+      DB_PASS: lifting_password
       PORT: 8002
-      NODE_ENV: production
     ports:
       - "8002:8002"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      # Mount source code for development (optional, comment out for production)
-      - ./backend/src:/app/src
-      - ./backend/prisma:/app/prisma
 
   # Frontend
   frontend:
@@ -54,7 +53,7 @@ services:
     ports:
       - "5273:80"
     depends_on:
-      - backend
+      - backend-java
 
 volumes:
   mysql_data:
