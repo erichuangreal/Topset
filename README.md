@@ -196,4 +196,3 @@ All coaching logic is computed client-side from logged workout data.
 - Progressive overload recommendations
 - Personalized fatigue modeling
 - Optional social and competitive features
-
